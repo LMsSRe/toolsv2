@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SujoySec Tools – Online Cyber Utilities</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #0d1117; /* Even darker background */
+            color: #e5e7eb;
+            background-image:
+                linear-gradient(rgba(11, 219, 153, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(11, 219, 153, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .tool-card {
+            background-color: rgba(31, 41, 55, 0.8); /* Slightly transparent */
+            border: 1px solid #374151;
+            backdrop-filter: blur(10px);
+        }
+        .neon-text {
+            color: #34d399;
+            text-shadow: 0 0 5px #34d399, 0 0 15px #34d399, 0 0 25px #34d399;
+            animation: pulse 4s infinite;
+        }
+        .btn-primary {
+            background-image: linear-gradient(to right, #10b981, #34d399, #10b981);
+            background-size: 200% auto;
+            color: white;
+            transition: all 0.5s ease;
+            border: 1px solid #34d399;
+        }
+        .btn-primary:hover {
+            background-position: right center; /* change the direction of the change here */
+            box-shadow: 0 0 20px #34d399;
+        }
+        .result-box {
+            background-color: #0f172a;
+            border: 1px solid #4b5563;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.9rem;
+        }
+        .nav-item {
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .nav-item.active {
+            background-color: #10b981;
+            color: #ffffff;
+            border-color: #34d399;
+            box-shadow: 0 0 10px #10b981;
+        }
+        .nav-item:not(.active):hover {
+            background-color: #1f2937;
+            border-color: #4b5563;
+        }
+        #toast-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0.5s, transform 0.5s;
+        }
+        #toast-notification.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -10px);
+        }
+        @keyframes pulse {
+            0% { text-shadow: 0 0 5px #34d399, 0 0 15px #34d399; }
+            50% { text-shadow: 0 0 10px #34d399, 0 0 25px #34d399, 0 0 40px #34d399; }
+            100% { text-shadow: 0 0 5px #34d399, 0 0 15px #34d399; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-5xl font-bold neon-text"><i class="fas fa-user-secret mr-3"></i>SujoySec Tools</h1>
+            <p class="text-gray-400 mt-2">Online Cyber Utilities for Researchers & Ethical Hackers</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="flex flex-wrap justify-center gap-2 mb-8">
+            <button class="nav-item px-3 py-2 rounded-md text-sm md:text-base font-medium active" data-tool="base64"><i class="fas fa-cubes-stacked mr-2"></i>Base64</button>
+            <button class="nav-item px-3 py-2 rounded-md text-sm md:text-base font-medium" data-tool="hasher"><i class="fas fa-hashtag mr-2"></i>Hash Gen</button>
+            <button class="nav-item px-3 py-2 rounded-md text-sm md:text-base font-medium" data-tool="url_coder"><i class="fas fa-link mr-2"></i>URL Coder</button>
+            <button class="nav-item px-3 py-2 rounded-md text-sm md:text-base font-medium" data-tool="converter"><i class="fas fa-right-left mr-2"></i>Converters</button>
+            <button class="nav-item px-3 py-2 rounded-md text-sm md:text-base font-medium" data-tool="whois"><i class="far fa-id-card mr-2"></i>WHOIS</button>
+            <button class="nav-item px-3 py-2 rounded-md text-sm md:text-base font-medium" data-tool="ip_lookup"><i class="fas fa-map-marker-alt mr-2"></i>IP Lookup</button>
+            <button class="nav-item px-3 py-2 rounded-md text-sm md:text-base font-medium" data-tool="port_scanner"><i class="fas fa-door-open mr-2"></i>Port Scan</button>
+        </nav>
+
+        <!-- Tools Container -->
+        <main id="tools-container" class="transition-all duration-300">
+            <!-- Dynamically populated content will go here -->
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-notification">Copied to clipboard!</div>
+
+    <!-- Crypto-JS for hashing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+    <script>
+        // --- Tool Templates ---
+        const toolTemplates = {
+            base64: `
+                <div class="tool-content p-6 rounded-lg tool-card">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-200"><i class="fas fa-cubes-stacked mr-2"></i>Base64 Encoder / Decoder</h2>
+                    <textarea id="base64-input" class="w-full h-32 p-2 bg-gray-900 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="Enter text here..."></textarea>
+                    <div class="flex gap-4 mt-4">
+                        <button onclick="handleBase64('encode')" class="btn-primary flex-1 py-2 px-4 rounded-md font-semibold">Encode</button>
+                        <button onclick="handleBase64('decode')" class="btn-primary flex-1 py-2 px-4 rounded-md font-semibold">Decode</button>
+                    </div>
+                    <div class="mt-4">
+                        <h3 class="font-semibold mb-2">Result:</h3>
+                        <div id="base64-output" class="result-box p-3 rounded-md min-h-[50px]"></div>
+                        <button onclick="copyToClipboard('base64-output')" class="mt-2 text-sm text-gray-400 hover:text-white">Copy Result</button>
+                    </div>
+                </div>`,
+            hasher: `
+                <div class="tool-content p-6 rounded-lg tool-card">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-200"><i class="fas fa-hashtag mr-2"></i>Hash Generator</h2>
+                    <input type="text" id="hash-input" class="w-full p-2 bg-gray-900 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="Enter string to hash...">
+                    <button onclick="generateHashes()" class="btn-primary w-full mt-4 py-2 px-4 rounded-md font-semibold">Generate Hashes</button>
+                    <div class="mt-4 grid md:grid-cols-3 gap-4">
+                        <div><h3 class="font-semibold">MD5:</h3><div id="md5-output" class="result-box p-3 rounded-md mt-1"></div><button onclick="copyToClipboard('md5-output')" class="mt-1 text-sm text-gray-400 hover:text-white">Copy</button></div>
+                        <div><h3 class="font-semibold">SHA-1:</h3><div id="sha1-output" class="result-box p-3 rounded-md mt-1"></div><button onclick="copyToClipboard('sha1-output')" class="mt-1 text-sm text-gray-400 hover:text-white">Copy</button></div>
+                        <div><h3 class="font-semibold">SHA-256:</h3><div id="sha256-output" class="result-box p-3 rounded-md mt-1"></div><button onclick="copyToClipboard('sha256-output')" class="mt-1 text-sm text-gray-400 hover:text-white">Copy</button></div>
+                    </div>
+                </div>`,
+            url_coder: `
+                <div class="tool-content p-6 rounded-lg tool-card">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-200"><i class="fas fa-link mr-2"></i>URL Encoder / Decoder</h2>
+                    <textarea id="url-input" class="w-full h-32 p-2 bg-gray-900 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="Enter URL or component..."></textarea>
+                    <div class="flex gap-4 mt-4">
+                        <button onclick="handleUrl('encode')" class="btn-primary flex-1 py-2 px-4 rounded-md font-semibold">Encode</button>
+                        <button onclick="handleUrl('decode')" class="btn-primary flex-1 py-2 px-4 rounded-md font-semibold">Decode</button>
+                    </div>
+                    <div class="mt-4"><h3 class="font-semibold mb-2">Result:</h3><div id="url-output" class="result-box p-3 rounded-md min-h-[50px]"></div><button onclick="copyToClipboard('url-output')" class="mt-2 text-sm text-gray-400 hover:text-white">Copy Result</button></div>
+                </div>`,
+            converter: `
+                <div class="tool-content p-6 rounded-lg tool-card">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-200"><i class="fas fa-right-left mr-2"></i>Text / Hex / Binary Converter</h2>
+                    <textarea id="converter-input" class="w-full h-32 p-2 bg-gray-900 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="Enter text..."></textarea>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        <button onclick="handleConvert('toHex')" class="btn-primary py-2 px-4 rounded-md font-semibold">To Hex</button>
+                        <button onclick="handleConvert('fromHex')" class="btn-primary py-2 px-4 rounded-md font-semibold">From Hex</button>
+                        <button onclick="handleConvert('toBinary')" class="btn-primary py-2 px-4 rounded-md font-semibold">To Binary</button>
+                        <button onclick="handleConvert('fromBinary')" class="btn-primary py-2 px-4 rounded-md font-semibold">From Binary</button>
+                    </div>
+                    <div class="mt-4"><h3 class="font-semibold mb-2">Result:</h3><div id="converter-output" class="result-box p-3 rounded-md min-h-[50px]"></div><button onclick="copyToClipboard('converter-output')" class="mt-2 text-sm text-gray-400 hover:text-white">Copy Result</button></div>
+                </div>`,
+            whois: `
+                <div class="tool-content p-6 rounded-lg tool-card">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-200"><i class="far fa-id-card mr-2"></i>WHOIS Lookup (Simulated)</h2>
+                    <input type="text" id="whois-input" class="w-full p-2 bg-gray-900 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="Enter domain name (e.g., google.com)">
+                    <button onclick="whoisLookup()" class="btn-primary w-full mt-4 py-2 px-4 rounded-md font-semibold">Lookup</button>
+                    <div class="mt-4"><h3 class="font-semibold mb-2">Result:</h3><pre id="whois-output" class="result-box p-3 rounded-md min-h-[50px]"></pre><button onclick="copyToClipboard('whois-output')" class="mt-2 text-sm text-gray-400 hover:text-white">Copy</button></div>
+                </div>`,
+            ip_lookup: `
+                <div class="tool-content p-6 rounded-lg tool-card">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-200"><i class="fas fa-map-marker-alt mr-2"></i>IP Geolocation (Simulated)</h2>
+                    <input type="text" id="ip-input" class="w-full p-2 bg-gray-900 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="Enter IP address (e.g., 8.8.8.8)">
+                    <button onclick="ipLookup()" class="btn-primary w-full mt-4 py-2 px-4 rounded-md font-semibold">Lookup IP</button>
+                    <div class="mt-4"><h3 class="font-semibold mb-2">Result:</h3><pre id="ip-output" class="result-box p-3 rounded-md min-h-[50px]"></pre><button onclick="copyToClipboard('ip-output')" class="mt-2 text-sm text-gray-400 hover:text-white">Copy</button></div>
+                </div>`,
+            port_scanner: `
+                <div class="tool-content p-6 rounded-lg tool-card">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-200"><i class="fas fa-door-open mr-2"></i>Port Scanner (Simulated)</h2>
+                    <input type="text" id="port-input" class="w-full p-2 bg-gray-900 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="Enter domain or IP to scan">
+                    <button onclick="portScan()" class="btn-primary w-full mt-4 py-2 px-4 rounded-md font-semibold">Scan Ports</button>
+                    <div class="mt-4"><h3 class="font-semibold mb-2">Scan Results:</h3><pre id="port-output" class="result-box p-3 rounded-md min-h-[50px]"></pre><button onclick="copyToClipboard('port-output')" class="mt-2 text-sm text-gray-400 hover:text-white">Copy</button></div>
+                </div>`,
+        };
+
+        // --- Navigation and View Management ---
+        const navItems = document.querySelectorAll('.nav-item');
+        const toolsContainer = document.getElementById('tools-container');
+
+        function switchTool(toolId) {
+            toolsContainer.innerHTML = toolTemplates[toolId];
+            navItems.forEach(i => i.classList.remove('active'));
+            document.querySelector(`[data-tool=${toolId}]`).classList.add('active');
+        }
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const toolId = item.getAttribute('data-tool');
+                switchTool(toolId);
+            });
+        });
+        
+        // Load initial tool
+        switchTool('base64');
+
+
+        // --- Utility Functions ---
+        function showToast(message) {
+            const toast = document.getElementById('toast-notification');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        function copyToClipboard(elementId) {
+            const outputElement = document.getElementById(elementId);
+            if (!outputElement || !outputElement.textContent.trim()) {
+                showToast('Nothing to copy!');
+                return;
+            }
+            const textToCopy = outputElement.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                showToast('Copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                showToast('Failed to copy!');
+            });
+        }
+
+        // --- Tool Logic ---
+        function handleBase64(action) {
+            const input = document.getElementById('base64-input').value;
+            const outputEl = document.getElementById('base64-output');
+            if (!input) { outputEl.textContent = 'Please enter some text.'; return; }
+            try { outputEl.textContent = action === 'encode' ? btoa(input) : atob(input); } 
+            catch (e) { outputEl.textContent = 'Error: Invalid input.'; }
+        }
+
+        function generateHashes() {
+            const input = document.getElementById('hash-input').value;
+            if (!input) { showToast('Please enter a string.'); return; }
+            document.getElementById('md5-output').textContent = CryptoJS.MD5(input).toString();
+            document.getElementById('sha1-output').textContent = CryptoJS.SHA1(input).toString();
+            document.getElementById('sha256-output').textContent = CryptoJS.SHA256(input).toString();
+        }
+        
+        function handleUrl(action) {
+            const input = document.getElementById('url-input').value;
+            const outputEl = document.getElementById('url-output');
+            if (!input) { outputEl.textContent = 'Please enter a URL component.'; return; }
+            try { outputEl.textContent = action === 'encode' ? encodeURIComponent(input) : decodeURIComponent(input); }
+            catch(e) { outputEl.textContent = 'Error: Invalid input for URL decoding.'; }
+        }
+        
+        function handleConvert(action) {
+            const input = document.getElementById('converter-input').value;
+            const outputEl = document.getElementById('converter-output');
+            if (!input) { outputEl.textContent = 'Please enter some text to convert.'; return; }
+            try {
+                switch(action) {
+                    case 'toHex':
+                        outputEl.textContent = [...input].map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+                        break;
+                    case 'fromHex':
+                        outputEl.textContent = input.match(/.{1,2}/g).map(byte => String.fromCharCode(parseInt(byte, 16))).join('');
+                        break;
+                    case 'toBinary':
+                        outputEl.textContent = [...input].map(c => c.charCodeAt(0).toString(2).padStart(8, '0')).join(' ');
+                        break;
+                    case 'fromBinary':
+                        outputEl.textContent = input.split(' ').map(byte => String.fromCharCode(parseInt(byte, 2))).join('');
+                        break;
+                }
+            } catch (e) {
+                outputEl.textContent = 'Error: Conversion failed. Check input format.';
+            }
+        }
+        
+        function whoisLookup() {
+            const domain = document.getElementById('whois-input').value.trim();
+            const outputEl = document.getElementById('whois-output');
+            if (!domain) { outputEl.textContent = 'Please enter a domain name.'; return; }
+            outputEl.textContent = `Looking up ${domain}...\n\n`;
+            setTimeout(() => {
+                const creationDate = new Date(Date.now() - Math.random() * 1e11).toISOString().split('T')[0];
+                const expiryDate = new Date(Date.now() + Math.random() * 1.5e11).toISOString().split('T')[0];
+                const registrars = ['GoDaddy', 'Namecheap', 'Google Domains', 'Cloudflare', 'Domain.com'];
+                outputEl.textContent = `[SIMULATED RESULT]\nDomain: ${domain}\nRegistrar: ${registrars[Math.floor(Math.random()*registrars.length)]}\nCreation Date: ${creationDate}\nExpiration Date: ${expiryDate}`;
+            }, 1000);
+        }
+
+        function ipLookup() {
+            const ip = document.getElementById('ip-input').value.trim();
+            const outputEl = document.getElementById('ip-output');
+            if (!ip) { outputEl.textContent = 'Please enter an IP address.'; return; }
+            outputEl.textContent = `Looking up ${ip}...\n\n`;
+            setTimeout(() => {
+                 const data = [['USA', 'New York', 'Comcast'], ['UK', 'London', 'BT Group'], ['Japan', 'Tokyo', 'NTT'], ['Australia', 'Sydney', 'Telstra'], ['USA', 'Mountain View', 'Google LLC']];
+                 const [country, city, isp] = data[Math.floor(Math.random()*data.length)];
+                outputEl.textContent = `[SIMULATED RESULT]\nIP Address: ${ip}\nCountry: ${country}\nCity: ${city}\nISP: ${isp}`;
+            }, 1000);
+        }
+        
+        function portScan() {
+            const target = document.getElementById('port-input').value.trim();
+            const outputEl = document.getElementById('port-output');
+            if (!target) { outputEl.textContent = 'Please enter a domain or IP.'; return; }
+            outputEl.textContent = `Scanning ${target}...\n\n`;
+            const ports = [
+                { port: 21, service: 'FTP', status: Math.random() > 0.7 ? 'Open' : 'Closed' },
+                { port: 22, service: 'SSH', status: Math.random() > 0.5 ? 'Open' : 'Closed' },
+                { port: 80, service: 'HTTP', status: 'Open' },
+                { port: 443, service: 'HTTPS', status: 'Open' },
+                { port: 3389, service: 'RDP', status: Math.random() > 0.8 ? 'Open' : 'Closed' },
+                { port: 8080, service: 'HTTP-Alt', status: Math.random() > 0.6 ? 'Open' : 'Closed' },
+            ];
+            ports.forEach((p, i) => {
+                setTimeout(() => {
+                    outputEl.textContent += `Port ${p.port.toString().padEnd(5)} (${p.service.padEnd(8)}): ${p.status}\n`;
+                }, (i + 1) * 300);
+            });
+        }
+    </script>
+</body>
+</html>
